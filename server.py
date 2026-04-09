@@ -8,8 +8,16 @@ LLM-based clients can query security posture using natural language.
 This server is inspired by HCL AppScan on Cloud's MCP server but all
 responses are hardcoded mock data for demonstration purposes.
 
+Authentication: clients must send a hardcoded Key ID and Key Secret via
+the `X-Key-Id` and `X-Key-Secret` request headers (mirroring HCL AppScan
+on Cloud's Key ID / Key Secret model). There is no real auth logic -
+the server simply compares the incoming headers against constants.
+
 Transport: Streamable HTTP on the /mcp endpoint.
 """
+
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 from mcp.server.fastmcp import FastMCP
 
@@ -19,6 +27,12 @@ from mcp.server.fastmcp import FastMCP
 
 SERVER_NAME = "SentinelScan Cloud MCP Server"
 SERVER_VERSION = "1.0.0"
+
+# Hardcoded credentials. Clients must send these exact values in the
+# X-Key-Id and X-Key-Secret headers on every request. These are NOT
+# secrets - they're baked into the source code for demonstration.
+KEY_ID = "sentinel-demo-key-id-12345"
+KEY_SECRET = "sentinel-demo-key-secret-abcdef67890"
 
 mcp = FastMCP(
     name=SERVER_NAME,
@@ -410,9 +424,51 @@ def sentinelscan_doc() -> str:
 
 
 # ---------------------------------------------------------------------------
+# Authentication middleware
+# ---------------------------------------------------------------------------
+
+
+class KeyAuthMiddleware(BaseHTTPMiddleware):
+    """Require a hardcoded Key ID and Key Secret on every request.
+
+    Modeled after HCL AppScan on Cloud's Key ID / Key Secret scheme, but
+    with no real credential management - we just compare the incoming
+    headers against the constants defined at the top of this module.
+    """
+
+    async def dispatch(self, request, call_next):
+        key_id = request.headers.get("x-key-id")
+        key_secret = request.headers.get("x-key-secret")
+
+        if key_id != KEY_ID or key_secret != KEY_SECRET:
+            return JSONResponse(
+                {
+                    "error": "Unauthorized",
+                    "message": (
+                        "Missing or invalid credentials. Provide the "
+                        "'X-Key-Id' and 'X-Key-Secret' headers on every "
+                        "request to the SentinelScan Cloud MCP Server."
+                    ),
+                },
+                status_code=401,
+            )
+
+        return await call_next(request)
+
+
+def create_app():
+    """Build the ASGI app with the Key ID / Key Secret middleware attached."""
+    app = mcp.streamable_http_app()
+    app.add_middleware(KeyAuthMiddleware)
+    return app
+
+
+# ---------------------------------------------------------------------------
 # Entrypoint
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    # Run as a remote MCP server over Streamable HTTP on /mcp
-    mcp.run(transport="streamable-http")
+    # Run locally via uvicorn so the auth middleware is applied.
+    import uvicorn
+
+    uvicorn.run(create_app(), host="0.0.0.0", port=8000)

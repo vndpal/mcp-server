@@ -12,7 +12,9 @@ import sys
 # Make the repository root importable so we can `import server`.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from server import mcp  # noqa: E402
+from server import create_app  # noqa: E402
 
-# Vercel's Python runtime will serve this ASGI application.
-app = mcp.streamable_http_app()
+# Vercel's Python runtime will serve this ASGI application. We use
+# create_app() instead of mcp.streamable_http_app() directly so that
+# the hardcoded Key ID / Key Secret auth middleware is attached.
+app = create_app()
