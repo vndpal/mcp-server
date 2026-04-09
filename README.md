@@ -51,6 +51,53 @@ docker build -t sentinelscan-cloud-mcp .
 docker run -p 8000:8000 sentinelscan-cloud-mcp
 ```
 
+## Deploying to Vercel
+
+The repo is pre-configured to deploy as a Vercel Python serverless
+function so anyone can use the server remotely over the public internet.
+
+**Files involved:**
+
+- `api/index.py` — Vercel entrypoint. Imports the FastMCP instance from
+  `server.py` and exposes its Streamable-HTTP Starlette app as `app`,
+  which Vercel's Python runtime serves automatically.
+- `vercel.json` — rewrites `/mcp` (and `/mcp/*`) to `/api/index` so
+  clients can use the canonical MCP path.
+- `requirements.txt` — picked up by Vercel to install the `mcp` SDK.
+- `server.py` — runs FastMCP in `stateless_http=True` mode, which is
+  required on serverless platforms since each request is handled by a
+  fresh function invocation and no session state can be preserved
+  between calls.
+
+**Deploy via the Vercel CLI:**
+
+```bash
+npm i -g vercel
+vercel login
+vercel           # preview deployment
+vercel --prod    # production deployment
+```
+
+**Or deploy from GitHub:**
+
+1. Push this repo to GitHub (already done on branch
+   `claude/create-remote-mcp-server-PMsnL`).
+2. Go to <https://vercel.com/new> and import the repository.
+3. Framework preset: **Other**. Leave build/install commands empty —
+   Vercel will auto-detect `requirements.txt` and the `api/` directory.
+4. Click **Deploy**.
+
+After deployment your MCP endpoint will be:
+
+```
+https://<your-project>.vercel.app/mcp
+```
+
+> **Note:** On Vercel's Hobby plan, serverless functions have a 10
+> second execution timeout. That's plenty for this server since all
+> responses are hardcoded, but if you later wire it up to slow
+> upstream APIs you may need the Pro plan (60s) or longer.
+
 ## Connecting an MCP client
 
 Point any MCP-compatible client (Claude Desktop, Claude Code, or a custom
@@ -61,6 +108,19 @@ agent built on the Anthropic SDK) at the server URL:
   "mcpServers": {
     "sentinelscan-cloud": {
       "url": "http://localhost:8000/mcp",
+      "transport": "http"
+    }
+  }
+}
+```
+
+For a Vercel-hosted deployment, replace the URL:
+
+```json
+{
+  "mcpServers": {
+    "sentinelscan-cloud": {
+      "url": "https://<your-project>.vercel.app/mcp",
       "transport": "http"
     }
   }
