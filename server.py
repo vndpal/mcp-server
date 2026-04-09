@@ -29,6 +29,10 @@ mcp = FastMCP(
     ),
     host="0.0.0.0",
     port=8000,
+    # Stateless HTTP so the server can run on serverless platforms
+    # (e.g. Vercel) where each request is handled by a fresh function
+    # invocation and no session state can be preserved between calls.
+    stateless_http=True,
 )
 
 # ---------------------------------------------------------------------------
