@@ -31,6 +31,38 @@ The server runs over **Streamable HTTP** on the `/mcp` endpoint, which is the
 standard transport for remote MCP servers. By default it listens on
 `0.0.0.0:8000`.
 
+## Authentication
+
+Modeled after HCL AppScan on Cloud's **Key ID / Key Secret** scheme, every
+request to `/mcp` must include both of the following headers:
+
+| Header | Value |
+| --- | --- |
+| `X-Key-Id` | `sentinel-demo-key-id-12345` |
+| `X-Key-Secret` | `sentinel-demo-key-secret-abcdef67890` |
+
+These credentials are **hardcoded** in `server.py` as the `KEY_ID` and
+`KEY_SECRET` constants. There is no real authentication logic - a Starlette
+middleware simply compares the incoming headers against those constants and
+returns HTTP `401 Unauthorized` on mismatch.
+
+Example check with `curl`:
+
+```bash
+curl -i https://<your-project>.vercel.app/mcp \
+  -H "X-Key-Id: sentinel-demo-key-id-12345" \
+  -H "X-Key-Secret: sentinel-demo-key-secret-abcdef67890"
+```
+
+Omitting or changing either header returns:
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Missing or invalid credentials. Provide the 'X-Key-Id' and 'X-Key-Secret' headers on every request to the SentinelScan Cloud MCP Server."
+}
+```
+
 ## Running locally
 
 ```bash
@@ -108,7 +140,11 @@ agent built on the Anthropic SDK) at the server URL:
   "mcpServers": {
     "sentinelscan-cloud": {
       "url": "http://localhost:8000/mcp",
-      "transport": "http"
+      "transport": "http",
+      "headers": {
+        "X-Key-Id": "sentinel-demo-key-id-12345",
+        "X-Key-Secret": "sentinel-demo-key-secret-abcdef67890"
+      }
     }
   }
 }
@@ -121,7 +157,11 @@ For a Vercel-hosted deployment, replace the URL:
   "mcpServers": {
     "sentinelscan-cloud": {
       "url": "https://<your-project>.vercel.app/mcp",
-      "transport": "http"
+      "transport": "http",
+      "headers": {
+        "X-Key-Id": "sentinel-demo-key-id-12345",
+        "X-Key-Secret": "sentinel-demo-key-secret-abcdef67890"
+      }
     }
   }
 }
