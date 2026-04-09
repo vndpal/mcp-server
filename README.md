@@ -4,9 +4,8 @@ A remote **Model Context Protocol (MCP)** server that exposes hardcoded
 application security testing data (applications, scans, and issues) so that
 LLM-based clients can query security posture using natural language.
 
-This project is inspired by the HCL AppScan on Cloud MCP server, but the
-server name, branding, and all responses are **hardcoded mock data** for
-demonstration purposes.
+All server responses are **hardcoded mock data** intended for demonstration
+and testing purposes.
 
 ## Features
 
@@ -33,8 +32,8 @@ standard transport for remote MCP servers. By default it listens on
 
 ## Authentication
 
-Modeled after HCL AppScan on Cloud's **Key ID / Key Secret** scheme, every
-request to `/mcp` must include both of the following headers:
+Every request to `/mcp` must include both of the following **Key ID / Key
+Secret** headers:
 
 | Header | Value |
 | --- | --- |

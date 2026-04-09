@@ -5,13 +5,13 @@ A remote Model Context Protocol (MCP) server that exposes hardcoded
 application security testing data (applications, scans, issues) so that
 LLM-based clients can query security posture using natural language.
 
-This server is inspired by HCL AppScan on Cloud's MCP server but all
-responses are hardcoded mock data for demonstration purposes.
+All server responses are hardcoded mock data intended for demonstration
+and testing purposes.
 
 Authentication: clients must send a hardcoded Key ID and Key Secret via
-the `X-Key-Id` and `X-Key-Secret` request headers (mirroring HCL AppScan
-on Cloud's Key ID / Key Secret model). There is no real auth logic -
-the server simply compares the incoming headers against constants.
+the `X-Key-Id` and `X-Key-Secret` request headers. There is no real
+auth logic - the server simply compares the incoming headers against
+constants defined in this module.
 
 Transport: Streamable HTTP on the /mcp endpoint.
 """
@@ -431,9 +431,9 @@ def sentinelscan_doc() -> str:
 class KeyAuthMiddleware(BaseHTTPMiddleware):
     """Require a hardcoded Key ID and Key Secret on every request.
 
-    Modeled after HCL AppScan on Cloud's Key ID / Key Secret scheme, but
-    with no real credential management - we just compare the incoming
-    headers against the constants defined at the top of this module.
+    There is no real credential management - we just compare the
+    incoming headers against the constants defined at the top of this
+    module and reject anything that doesn't match exactly.
     """
 
     async def dispatch(self, request, call_next):
